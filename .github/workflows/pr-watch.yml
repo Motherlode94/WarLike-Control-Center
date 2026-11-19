@@ -1,0 +1,33 @@
+name: WarLike PR Watch
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 7 * * *'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit open PRs across owned repositories
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WARLIKE_GITHUB_READ_TOKEN: ${{ secrets.WARLIKE_GITHUB_READ_TOKEN }}
+          WARLIKE_GITHUB_OWNER: Motherlode94
+          WARLIKE_PR_STALE_DAYS: '7'
+          WARLIKE_PR_ISSUE: 'true'
+        run: node scripts/github-pr-watch.mjs
+      - name: Archive audit even after partial API errors
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlike-pr-watch
+          path: reports/
+          if-no-files-found: warn
